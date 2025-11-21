@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "earnings-call-synthesis"
+version = "0.1.0"
+description = "Uses Seeking Alpha API to synthesize earnings call transcripts and send email triggers to users"
+authors = ["12smonahan <12smonahan@gmail.com>"]
+readme = "README.md"
+packages = [{include = "earnings_call_synthesis"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+requests = "^2.31.0"
+
+[tool.poetry.group.dev.dependencies]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
