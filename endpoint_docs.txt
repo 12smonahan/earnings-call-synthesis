@@ -1,0 +1,87 @@
+How to Pull an Earnings Transcript (Seeking Alpha API)
+🎯 Workflow Overview
+
+List transcripts for a symbol using /transcripts/v2/list to obtain the transcript IDs.
+
+Fetch a specific transcript using /transcripts/v2/get-details with the ID obtained from the first call.
+
+(Optional) You can still use the older /transcripts/get-details endpoint, but it’s marked “Deprecating”; prefer the v2 version.
+
+1. GET /transcripts/v2/list
+
+Retrieves a paginated list of transcripts for a single stock symbol.
+
+Required query parameter:
+
+id – the symbol of the stock (e.g., aapl). Only one symbol is allowed per call
+screenshot
+.
+
+Optional query parameters:
+
+until – Unix timestamp (epoch). Use with since to filter transcripts up to this time
+screenshot
+.
+
+since – Unix timestamp (epoch). Use with until to filter transcripts starting from this time
+screenshot
+.
+
+size – Number of transcripts to return (default: 20)
+screenshot
+.
+
+number – Page number (e.g., 1, 2, etc.). Not explicitly shown in UI but present in code snippet (defaults to 1).
+
+Example request:
+
+GET /transcripts/v2/list?id=aapl&size=20&number=1
+
+
+This returns an array of transcript metadata objects. Each object includes a unique id value that you’ll need to fetch the transcript itself.
+
+2. GET /transcripts/v2/get-details
+
+Fetches the full transcript text for a given transcript ID (returned from the list endpoint).
+
+Required query parameter:
+
+id – the numeric transcript ID obtained from /transcripts/v2/list
+screenshot
+.
+
+Example request:
+
+GET /transcripts/v2/get-details?id=4341792
+
+
+The response contains fields such as title, publishDate, speakers, and content (the full transcript text).
+
+3. GET /transcripts/get-details (Deprecated)
+
+This older endpoint retrieves transcript details similar to the v2 endpoint, but it’s marked Deprecating.
+
+Required query parameter:
+
+id – transcript ID from the legacy /transcripts/list endpoint
+screenshot
+.
+
+Example request:
+
+GET /transcripts/get-details?id=4341792
+
+
+Use this only for backward compatibility; prefer the v2 endpoints.
+
+✅ Putting It Together
+
+To pull an earnings transcript for a stock:
+
+List transcripts by calling /transcripts/v2/list?id=<symbol> and capture the id of the transcript you’re interested in (e.g., the most recent one).
+
+Fetch transcript details by calling /transcripts/v2/get-details?id=<transcript_id>.
+
+Use the returned content to process or display the earnings call transcript in your application.
+
+Note: All requests require RapidAPI headers (x-rapidapi-key and x-rapidapi-host) as shown in the code snippets on the documentation page
