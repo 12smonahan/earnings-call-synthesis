@@ -254,4 +254,4 @@ def fetch_latest_transcript(symbol: str = "UPST", api_key: Optional[str] = None)
 
 
 if __name__ == "__main__":
-    fetch_latest_transcript("AAPL")
+    fetch_latest_transcript("UPST")

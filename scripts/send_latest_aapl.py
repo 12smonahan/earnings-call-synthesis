@@ -1,4 +1,4 @@
-"""Send the latest Apple earnings call transcript and summary via email."""
+"""Send the latest Upstart earnings call transcript and summary via email."""
 
 import os
 from pathlib import Path
@@ -32,8 +32,8 @@ def main() -> None:
 
     try:
         generate_and_email_transcript(
-            symbol="AAPL",
-            company="Apple",
+            symbol="UPST",
+            company="Upstart",
             sender=sender,
             recipients=[recipient],
             smtp_host=smtp_host,
@@ -48,7 +48,7 @@ def main() -> None:
     except TranscriptPipelineError as exc:
         raise SystemExit(f"Transcript pipeline failed: {exc}") from exc
     except Exception as exc:  # pragma: no cover - surfaced to user for quick debug
-        raise SystemExit(f"Failed to send AAPL transcript email: {exc}") from exc
+        raise SystemExit(f"Failed to send UPST transcript email: {exc}") from exc
 
 
 if __name__ == "__main__":

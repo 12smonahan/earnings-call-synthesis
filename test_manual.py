@@ -28,7 +28,7 @@ def test_fetch_transcript():
     
     from fetch_transcript import fetch_latest_transcript
     
-    symbol = "AAPL"
+    symbol = "UPST"
     print(f"Fetching transcript for {symbol}...")
     
     result = fetch_latest_transcript(symbol)

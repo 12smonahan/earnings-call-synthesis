@@ -38,21 +38,21 @@ python test_manual.py email    # Test email building
 ### 1. Test Transcript Fetching
 
 ```bash
-python -c "from fetch_transcript import fetch_latest_transcript; fetch_latest_transcript('AAPL')"
+python -c "from fetch_transcript import fetch_latest_transcript; fetch_latest_transcript('UPST')"
 ```
 
 This will:
-- Fetch the latest transcript for AAPL
+- Fetch the latest transcript for UPST
 - Save it to `transcripts/` directory
 - Print the file path on success
 
 **Expected output:**
 ```
-Fetching earnings transcript for AAPL...
-Step 1: Finding transcript ID for AAPL...
+Fetching earnings transcript for UPST...
+Step 1: Finding transcript ID for UPST...
 Found transcript ID: <id>
 Step 2: Fetching transcript using ID <id>...
-Transcript saved to transcripts/AAPL_YYYY-MM-DD_transcript.txt
+Transcript saved to transcripts/UPST_YYYY-MM-DD_transcript.txt
 ```
 
 ### 2. Test Summarizer
@@ -63,8 +63,8 @@ from earnings_call.summarizer import synthesize_transcript
 
 # Use an existing transcript
 summary = synthesize_transcript(
-    Path("transcripts/AAPL_2025-10-30_transcript.txt"),
-    company="Apple",
+    Path("transcripts/UPST_2025-10-30_transcript.txt"),
+    company="Upstart",
     model="gpt-4o-mini",
     max_output_tokens=400
 )
@@ -90,7 +90,7 @@ message = build_email(
     sender="test@example.com",
     recipients=["recipient@example.com"],
     summary_text="Test summary text",
-    transcript_path=Path("transcripts/AAPL_2025-10-30_transcript.txt")
+    transcript_path=Path("transcripts/UPST_2025-10-30_transcript.txt")
 )
 
 print(f"Subject: {message['Subject']}")
@@ -106,8 +106,8 @@ from earnings_call.pipeline import generate_and_email_transcript
 
 # This will fetch, summarize, and email (if SMTP is configured)
 summary = generate_and_email_transcript(
-    symbol="AAPL",
-    company="Apple",
+    symbol="UPST",
+    company="Upstart",
     sender="your-email@example.com",
     recipients=["recipient@example.com"],
     smtp_host="smtp.example.com",
@@ -185,7 +185,7 @@ pytest tests/
 
 ### "Failed to fetch transcript"
 - Check your RapidAPI subscription includes the Seeking Alpha API
-- Verify the symbol is correct (e.g., "AAPL" not "apple")
+- Verify the symbol is correct (e.g., "UPST" not "upstart")
 - Check API rate limits
 
 ### "Failed to generate summary"
@@ -206,12 +206,12 @@ export SMTP_HOST=smtp.example.com
 export SMTP_USERNAME=smtp-user
 export SMTP_PASSWORD=smtp-pass
 
-# Run the Apple script
+# Run the Upstart script
 python scripts/send_latest_aapl.py
 ```
 
 This will:
-1. Fetch latest AAPL transcript
+1. Fetch latest UPST transcript
 2. Generate summary
 3. Email both to the recipient
 
