@@ -114,6 +114,27 @@ python scripts/send_latest_aapl.py
 Use `RECIPIENT_EMAIL` to override the default destination, and `SMTP_PORT`/`SMTP_USE_TLS` to adjust
 mail transport settings.
 
+### UPST integration test
+
+An end-to-end pytest covers fetching the latest Upstart call, summarizing it with OpenAI, and
+ensuring both the summary and transcript PDFs are attached before sending. It requires live
+credentials and will fail fast if anything is missing.
+
+```bash
+export RAPIDAPI_KEY="<rapidapi-key>"
+export OPENAI_API_KEY="<openai-key>"
+export SMTP_HOST="smtp.example.com"
+export SMTP_PORT="587"
+export SMTP_USERNAME="user"
+export SMTP_PASSWORD="pass"
+export SENDER_EMAIL="analyst@example.com"
+
+pytest -m integration tests/test_upst_pipeline.py
+```
+
+The test pins the recipients to `12smonahan@gmail.com` so you can run it as-is once your environment
+is configured. The SMTP call is monkeypatched, but attachment assertions still occur before send.
+
 ## Setup
 
 This project uses Python 3.12 and Poetry for dependency management.
