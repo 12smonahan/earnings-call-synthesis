@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Iterable, Optional
 import smtplib
 
-from fpdf import FPDF
+from fpdf import FPDF, HTMLMixin
 
 
 def build_email(
@@ -40,17 +40,29 @@ def build_email(
 
         pdf_path = output_dir / f"{transcript_file.stem}.pdf"
 
-        pdf = FPDF()
+        class TranscriptPDF(FPDF, HTMLMixin):
+            """PDF helper that can interpret simple HTML content."""
+
+        def _looks_like_html(text: str) -> bool:
+            lowered = text.lower()
+            return "<" in lowered and ">" in lowered and any(
+                tag in lowered for tag in ("<p", "<div", "<span", "<br", "<strong", "<em", "<h", "<ul", "<ol", "<li")
+            )
+
+        pdf = TranscriptPDF()
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
         pdf.set_font("Helvetica", "B", 14)
         pdf.cell(0, 10, "Earnings Call Transcript", ln=True)
-        pdf.set_font("Helvetica", "", 11)
         pdf.ln(4)
+        pdf.set_font("Helvetica", "", 11)
 
-        for line in transcript_text.splitlines():
-            content = line.strip() or " "
-            pdf.multi_cell(0, 7, content)
+        if _looks_like_html(transcript_text):
+            pdf.write_html(transcript_text)
+        else:
+            for line in transcript_text.splitlines():
+                content = line.strip() or " "
+                pdf.multi_cell(0, 7, content)
 
         pdf.output(pdf_path)
         return pdf_path
