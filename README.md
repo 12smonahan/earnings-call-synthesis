@@ -132,9 +132,6 @@ export SENDER_EMAIL="analyst@example.com"
 pytest -m integration tests/test_upst_pipeline.py
 ```
 
-The test pins the recipients to `12smonahan@gmail.com` so you can run it as-is once your environment
-is configured. The SMTP call is monkeypatched, but attachment assertions still occur before send.
-
 ## GitHub Actions
 
 Two workflows keep the pipelines runnable from GitHub:
