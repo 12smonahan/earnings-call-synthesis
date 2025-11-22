@@ -12,7 +12,12 @@ from openai import OpenAI
 load_dotenv()
 
 from earnings_call.emailer import build_email, send_email
-from earnings_call.summarizer import TranscriptSummary, synthesize_transcript
+from earnings_call.summarizer import (
+    TranscriptSummary,
+    find_missing_sections,
+    required_section_titles,
+    synthesize_transcript,
+)
 from earnings_call.transcripts import fetch_latest_transcript
 
 
@@ -76,6 +81,16 @@ def generate_and_email_transcript(
         transcript_text_override=transcript_text_override,
         use_sectioned_prompts=use_sectioned_prompts,
     )
+
+    if use_sectioned_prompts:
+        missing_sections = find_missing_sections(
+            summary.summary_text, required_section_titles()
+        )
+        if missing_sections:
+            missing_list = ", ".join(missing_sections)
+            raise TranscriptPipelineError(
+                f"Summary is missing required section(s): {missing_list}"
+            )
 
     message = build_email(
         subject=subject or f"{company} earnings call summary ({symbol})",
