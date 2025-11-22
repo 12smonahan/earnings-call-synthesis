@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections import OrderedDict
 from dataclasses import dataclass
+import json
 from pathlib import Path
 from typing import Iterable, Optional
 
@@ -34,42 +36,87 @@ Write with the urgency and specificity of a CEO preparing a counter-move playboo
 Pay particular attention to details that may indicate changing health of the US consumer, the trajectory of this companay, and any key competitive intelligence (underwriting changes, new product features, etc.)
 """
 
-SECTION_PROMPTS: list[tuple[str, str]] = [
-    (
-        "EXECUTIVE SUMMARY",
-        "Synthesize the single most important question a rival CEO should ask after this call and answer it with specific signals and metrics. Provide 1-3 focused paragraphs (roughly 300-400 words).",
+@dataclass
+class SectionPrompt:
+    """Structured instruction for a focused model call."""
+
+    title: str
+    instruction: str
+    prompt_label: str | None = None
+
+
+SECTION_PROMPTS: list[SectionPrompt] = [
+    SectionPrompt(
+        title="EXECUTIVE SUMMARY",
+        prompt_label="PART 1",
+        instruction=(
+            "Draft the first half of the executive summary (175-225 words) centered on competitive implications, pricing/credit signals, capital/liquidity posture, and channel moves."
+            " Be decisive, include specific metrics, and avoid filler so that a rival CEO can act."
+        ),
     ),
-    (
-        "ECONOMIC PERFORMANCE",
-        "Explain revenue, margins, unit economics, and cost trends. Anchor on changes versus last quarter/year with supporting metrics. Provide 1-3 decisive paragraphs tied to a key strategic question.",
+    SectionPrompt(
+        title="EXECUTIVE SUMMARY",
+        prompt_label="PART 2",
+        instruction=(
+            "Continue the executive summary with new evidence and implications (175-225 words) without repeating part 1."
+            " Emphasize directional changes, quantified results, and product/capability references that sharpen the threat picture."
+        ),
     ),
-    (
-        "CREDIT PERFORMANCE",
-        "Cover losses, delinquency, reserves, and underwriting shifts. Highlight directional changes and any trade-offs being made. Provide a 1-3 paragraph synthesis answering the main credit health question.",
+    SectionPrompt(
+        title="ECONOMIC PERFORMANCE",
+        instruction=(
+            "Explain revenue, margins, unit economics, and cost trends using specific levels and directionality."
+            " Anchor on changes versus last quarter/year with supporting metrics and connect to strategic questions in 2-3 paragraphs."
+        ),
     ),
-    (
-        "MACRO & CONSUMER HEALTH",
-        "Describe demand signals, spending patterns, and borrower stress indicators. Connect commentary to consumer strength/weakness in 1-3 paragraphs framed around the sharpest question raised by the call.",
+    SectionPrompt(
+        title="CREDIT PERFORMANCE",
+        instruction=(
+            "Cover losses, delinquency, reserves, and underwriting shifts with directional changes and trade-offs."
+            " Provide a dense 2-3 paragraph synthesis that answers the main credit health question."
+        ),
     ),
-    (
-        "NEW PRODUCTS, PARTNERSHIPS, OR TECHNOLOGY",
-        "Identify launches, pilots, partnerships, distribution changes, and tech investments. Summarize the implications in 1-3 paragraphs by answering the most urgent competitive question about these moves.",
+    SectionPrompt(
+        title="MACRO & CONSUMER HEALTH",
+        instruction=(
+            "Describe demand signals, spending patterns, borrower stress indicators, and any macro commentary."
+            " Connect to consumer strength/weakness in 2-3 paragraphs framed around the sharpest question raised by the call."
+        ),
     ),
-    (
-        "CUTTING-EDGE OR NOTEWORTHY ITEMS (EXPERIMENTAL, DIFFERENTIATED)",
-        "Call out experimental ideas, differentiated capabilities, or unusual tactics. Deliver 1-3 paragraphs answering the key question: what here could shift the playing field?",
+    SectionPrompt(
+        title="NEW PRODUCTS, PARTNERSHIPS, OR TECHNOLOGY",
+        instruction=(
+            "Identify launches, pilots, partnerships, distribution changes, and tech investments."
+            " Summarize the implications in 2-3 paragraphs by answering the most urgent competitive question about these moves."
+        ),
     ),
-    (
-        "RISKS & WATCH-OUTS",
-        "List emerging risks (regulatory, liquidity, operational, reputation) and explain why they matter now. 1-3 paragraphs tied to the critical risk question for a competitor.",
+    SectionPrompt(
+        title="CUTTING-EDGE OR NOTEWORTHY ITEMS (EXPERIMENTAL, DIFFERENTIATED)",
+        instruction=(
+            "Call out experimental ideas, differentiated capabilities, or unusual tactics."
+            " Deliver 2-3 paragraphs answering the key question: what here could shift the playing field?"
+        ),
     ),
-    (
-        "TACTICAL RESPONSES WE SHOULD CONSIDER AS A COMPETITOR",
-        "Recommend concrete counter-moves, pricing/credit responses, or channel plays we should make. 1-3 paragraphs that directly answer what we must do next and why.",
+    SectionPrompt(
+        title="RISKS & WATCH-OUTS",
+        instruction=(
+            "List emerging risks (regulatory, liquidity, operational, reputation) and explain why they matter now."
+            " Use 2-3 paragraphs tied to the critical risk question for a competitor."
+        ),
     ),
-    (
-        "ANALYST Q&A SYNTHESIS",
-        "Summarize analyst questions and management answers, focusing on themes and what they reveal. Provide 1-3 paragraphs that answer the key question revealed by Q&A themes.",
+    SectionPrompt(
+        title="TACTICAL RESPONSES WE SHOULD CONSIDER AS A COMPETITOR",
+        instruction=(
+            "Recommend concrete counter-moves, pricing/credit responses, or channel plays we should make."
+            " Provide 2-3 paragraphs that directly answer what we must do next and why."
+        ),
+    ),
+    SectionPrompt(
+        title="ANALYST Q&A SYNTHESIS",
+        instruction=(
+            "Summarize analyst questions and management answers, focusing on themes and what they reveal."
+            " Provide 2-3 paragraphs that answer the key question revealed by Q&A themes."
+        ),
     ),
 ]
 
@@ -111,7 +158,13 @@ def _build_user_prompt(company: str, transcript: str) -> str:
     )
 
 
-def _build_section_prompt(company: str, transcript: str, section_title: str, section_instruction: str) -> str:
+def _build_section_prompt(
+    company: str,
+    transcript: str,
+    section_title: str,
+    section_instruction: str,
+    prompt_label: str | None = None,
+) -> str:
     """Create a focused prompt for an individual section.
 
     Each section asks the model to answer the sharpest question raised by that domain
@@ -120,11 +173,13 @@ def _build_section_prompt(company: str, transcript: str, section_title: str, sec
     """
 
     transcript_block = transcript.strip()
+    label_text = f" ({prompt_label})" if prompt_label else ""
     return (
         f"You are reviewing the {company} earnings call transcript.\n"
-        f"Focus exclusively on the section '{section_title}' and ignore all other headings.\n"
-        "For this section, synthesize the single most important question a rival CEO should ask and answer it with decisive prose (no bullets).\n"
-        "Use metrics, product names, and directional changes where available. Keep to 1-3 short paragraphs to maintain density.\n"
+        f"Focus exclusively on the section '{section_title}'{label_text} and ignore all other headings.\n"
+        "Write for a rival fintech CEO preparing a counter-strategy: decisive prose, no bullets, and explicit metrics with directionality.\n"
+        "Maintain the overall 2,500-3,000 word target across nine sections; keep this portion dense so the stitched output is complete.\n"
+        "Use uppercase section headers, short paragraphs, and avoid Markdown symbols.\n"
         f"Section guidance: {section_instruction}\n\n"
         f"Transcript:\n\"\"\"{transcript_block}\"\"\"\n"
     )
@@ -181,9 +236,17 @@ def synthesize_transcript(
 
     if use_sectioned_prompts:
         per_section_tokens = max(400, max_output_tokens // len(SECTION_PROMPTS))
-        section_texts: list[str] = []
-        for idx, (title, instruction) in enumerate(SECTION_PROMPTS, start=1):
-            message = _build_section_prompt(company, transcript, title, instruction)
+        stitched_sections: "OrderedDict[str, list[str]]" = OrderedDict()
+        staged_responses: list[dict[str, object]] = []
+
+        for idx, section_prompt in enumerate(SECTION_PROMPTS, start=1):
+            message = _build_section_prompt(
+                company,
+                transcript,
+                section_prompt.title,
+                section_prompt.instruction,
+                prompt_label=section_prompt.prompt_label,
+            )
             response = api_client.chat.completions.create(
                 model=model,
                 temperature=0.2,
@@ -201,16 +264,29 @@ def synthesize_transcript(
                 )
             else:
                 section_body = raw_content or ""
-            formatted = (
-                f"{idx}) {title}\n"
-                f"{'=' * 80}\n"
-                f"{section_body.strip()}\n"
-            )
-            section_texts.append(formatted)
 
-        summary_text = "\n\n".join(section_texts)
-        # Write the last response for staging (or could write all, but using last for simplicity)
-        staging_path.write_text(response.model_dump_json(indent=2), encoding="utf-8")
+            stitched_sections.setdefault(section_prompt.title, []).append(section_body.strip())
+            staged_responses.append(
+                {
+                    "index": idx,
+                    "title": section_prompt.title,
+                    "prompt_label": section_prompt.prompt_label,
+                    "request": message,
+                    "response": response.model_dump(),
+                }
+            )
+
+        formatted_sections: list[str] = []
+        for display_index, (title, paragraphs) in enumerate(stitched_sections.items(), start=1):
+            paragraph_block = "\n\n".join(filter(None, paragraphs))
+            formatted_sections.append(
+                f"{display_index}) {title}\n"
+                f"{'=' * 80}\n"
+                f"{paragraph_block}\n"
+            )
+
+        summary_text = "\n\n".join(formatted_sections)
+        staging_path.write_text(json.dumps(staged_responses, indent=2), encoding="utf-8")
     else:
         message = _build_user_prompt(company, transcript)
         response = api_client.chat.completions.create(
