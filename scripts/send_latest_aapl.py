@@ -1,6 +1,12 @@
 """Send the latest Apple earnings call transcript and summary via email."""
 
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 from earnings_call.pipeline import generate_and_email_transcript, TranscriptPipelineError
 

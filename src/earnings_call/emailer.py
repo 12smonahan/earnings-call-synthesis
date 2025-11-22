@@ -39,7 +39,7 @@ def build_email(
     message.set_content(summary_text)
 
     message.add_attachment(
-        transcript,
+        transcript.encode('utf-8'),
         maintype="text",
         subtype="plain",
         filename=path.name,

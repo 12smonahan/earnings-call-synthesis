@@ -5,7 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Iterable, Optional
 
+from dotenv import load_dotenv
 from openai import OpenAI
+
+# Load environment variables from .env file
+load_dotenv()
 
 from fetch_transcript import fetch_latest_transcript
 from earnings_call.emailer import build_email, send_email

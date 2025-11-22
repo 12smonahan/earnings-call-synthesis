@@ -5,6 +5,11 @@ import requests
 from datetime import datetime
 from typing import Optional
 
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 # API Configuration
 HOST = "seeking-alpha.p.rapidapi.com"
 
