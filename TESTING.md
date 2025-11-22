@@ -90,7 +90,9 @@ message = build_email(
     sender="test@example.com",
     recipients=["recipient@example.com"],
     summary_text="Test summary text",
-    transcript_path=Path("transcripts/UPST_2025-10-30_transcript.txt")
+    transcript_path=Path("transcripts/UPST_2025-10-30_transcript.txt"),
+    company="Upstart Holdings",
+    symbol="UPST",
 )
 
 print(f"Subject: {message['Subject']}")

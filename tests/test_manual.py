@@ -162,6 +162,8 @@ def test_email_builder():
             recipients=[email_address],
             summary_text=summary_text,
             transcript_path=transcript_path,
+            company=DEFAULT_COMPANY,
+            symbol=DEFAULT_SYMBOL,
         )
         
         print(f"Email built successfully")

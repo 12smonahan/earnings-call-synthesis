@@ -5,9 +5,16 @@ from __future__ import annotations
 from email.message import EmailMessage
 from pathlib import Path
 from typing import Iterable, Optional
+import re
 import smtplib
 
-from fpdf import FPDF, HTMLMixin
+from fpdf import FPDF
+
+
+def _sanitize_pdf_text(text: str) -> str:
+    """Strip characters outside Latin-1 to keep FPDF core fonts happy."""
+
+    return text.encode("latin-1", "ignore").decode("latin-1")
 
 
 def build_email(
@@ -17,11 +24,13 @@ def build_email(
     recipients: Iterable[str],
     summary_text: str,
     transcript_path: Path | str,
+    company: str,
+    symbol: str,
 ) -> EmailMessage:
-    """Build an email containing the summary and transcript attachment.
+    """Build an email containing a formatted summary PDF and transcript PDF.
 
-    The email body contains the synthesized summary. The full transcript is attached
-    as a plain-text file so recipients can audit or pull additional quotes.
+    The email body calls out the company, call date, attachment contents, and a concise
+    four-sentence overview so recipients know what to expect before opening files.
     """
 
     path = Path(transcript_path)
@@ -34,52 +43,126 @@ def build_email(
 
     transcript = path.read_text(encoding="utf-8")
 
-    def _make_pdf(transcript_text: str, transcript_file: Path) -> Path:
-        output_dir = Path("transcript_pdfs")
+    def _extract_call_date(transcript_file: Path) -> Optional[str]:
+        match = re.search(r"_(\d{4}-\d{2}-\d{2})", transcript_file.stem)
+        return match.group(1) if match else None
+
+    def _make_summary_pdf(summary: str, transcript_file: Path) -> Path:
+        output_dir = Path("summary_pdfs")
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        pdf_path = output_dir / f"{transcript_file.stem}.pdf"
+        pdf_path = output_dir / f"{transcript_file.stem}_summary.pdf"
 
-        class TranscriptPDF(FPDF, HTMLMixin):
-            """PDF helper that can interpret simple HTML content."""
+        class SummaryPDF(FPDF):
+            """PDF helper for nicely formatted summaries."""
 
-        def _looks_like_html(text: str) -> bool:
-            lowered = text.lower()
-            return "<" in lowered and ">" in lowered and any(
-                tag in lowered for tag in ("<p", "<div", "<span", "<br", "<strong", "<em", "<h", "<ul", "<ol", "<li")
-            )
-
-        pdf = TranscriptPDF()
+        pdf = SummaryPDF()
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        pdf.set_font("Helvetica", "B", 14)
-        pdf.cell(0, 10, "Earnings Call Transcript", ln=True)
-        pdf.ln(4)
-        pdf.set_font("Helvetica", "", 11)
 
-        if _looks_like_html(transcript_text):
-            pdf.write_html(transcript_text)
-        else:
-            for line in transcript_text.splitlines():
-                content = line.strip() or " "
-                pdf.multi_cell(0, 7, content)
+        pdf.set_font("Helvetica", "B", 16)
+        pdf.cell(0, 10, _sanitize_pdf_text(f"{company} Earnings Call Summary"), ln=True)
+
+        call_date = _extract_call_date(transcript_file)
+        meta_line = f"Symbol: {symbol}"
+        if call_date:
+            meta_line += f" | Call Date: {call_date}"
+        pdf.set_font("Helvetica", "", 11)
+        pdf.cell(0, 8, _sanitize_pdf_text(meta_line), ln=True)
+        pdf.ln(6)
+
+        pdf.set_font("Helvetica", "B", 12)
+        pdf.cell(0, 8, "Executive Summary", ln=True)
+        pdf.ln(2)
+
+        pdf.set_font("Helvetica", "", 11)
+        for paragraph in summary.split("\n\n"):
+            cleaned = paragraph.strip()
+            if not cleaned:
+                continue
+            pdf.multi_cell(0, 7, _sanitize_pdf_text(cleaned))
+            pdf.ln(3)
 
         pdf.output(pdf_path)
         return pdf_path
 
-    pdf_attachment = _make_pdf(transcript, path)
+    def _make_transcript_pdf(transcript_text: str, transcript_file: Path) -> Path:
+        output_dir = Path("transcript_pdfs")
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        pdf_path = output_dir / f"{transcript_file.stem}.pdf"
+        if pdf_path.exists():
+            return pdf_path
+
+        class TranscriptPDF(FPDF):
+            """PDF helper for raw transcript text."""
+
+        pdf = TranscriptPDF()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        pdf.add_page()
+
+        pdf.set_font("Helvetica", "B", 14)
+        pdf.cell(0, 10, _sanitize_pdf_text(f"{company} Earnings Call Transcript"), ln=True)
+
+        call_date = _extract_call_date(transcript_file)
+        meta_line = f"Symbol: {symbol}"
+        if call_date:
+            meta_line += f" | Call Date: {call_date}"
+        pdf.set_font("Helvetica", "", 10)
+        pdf.cell(0, 8, _sanitize_pdf_text(meta_line), ln=True)
+        pdf.ln(4)
+
+        pdf.set_font("Helvetica", "", 10)
+        for line in transcript_text.splitlines():
+            cleaned = line.rstrip()
+            if not cleaned:
+                pdf.ln(4)
+                continue
+            pdf.multi_cell(0, 6, _sanitize_pdf_text(cleaned))
+
+        pdf.output(pdf_path)
+        return pdf_path
+
+    def _high_level_summary(summary: str) -> str:
+        sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", summary) if s.strip()]
+        if not sentences:
+            return "Summary unavailable."
+        return " ".join(sentences[:4])
+
+    pdf_attachment = _make_summary_pdf(summary_text, path)
+    transcript_pdf_attachment = _make_transcript_pdf(transcript, path)
 
     message = EmailMessage()
     message["Subject"] = subject
     message["From"] = sender
     message["To"] = ", ".join(recipients_list)
-    message.set_content(summary_text)
+    call_date = _extract_call_date(path)
+    body_lines = [
+        f"Attached are the summary and full transcript for {company} ({symbol}).",
+        f"Earnings call date: {call_date or 'Unknown'}.",
+        "",
+        "Attachments:",
+        f"- {pdf_attachment.name}: formatted PDF summary",
+        f"- {transcript_pdf_attachment.name}: PDF version of the full transcript",
+        "",
+        "High-level summary (4 sentences):",
+        _high_level_summary(summary_text),
+    ]
+
+    message.set_content("\n".join(body_lines))
 
     message.add_attachment(
         pdf_attachment.read_bytes(),
         maintype="application",
         subtype="pdf",
         filename=pdf_attachment.name,
+    )
+
+    message.add_attachment(
+        transcript_pdf_attachment.read_bytes(),
+        maintype="application",
+        subtype="pdf",
+        filename=transcript_pdf_attachment.name,
     )
 
     return message

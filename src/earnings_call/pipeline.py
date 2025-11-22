@@ -36,7 +36,7 @@ def generate_and_email_transcript(
     transcript_path: Optional[Path | str] = None,
     model: str = "gpt-4.1",
     client: Optional[OpenAI] = None,
-    max_output_tokens: int = 8000,
+    max_output_tokens: int = 16000,
     extra_instructions: Optional[Iterable[str]] = None,
     transcript_text_override: Optional[str] = None,
 ) -> TranscriptSummary:
@@ -81,6 +81,8 @@ def generate_and_email_transcript(
         recipients=recipients,
         summary_text=summary.summary_text,
         transcript_path=summary.transcript_path,
+        company=company,
+        symbol=symbol,
     )
 
     send_email(

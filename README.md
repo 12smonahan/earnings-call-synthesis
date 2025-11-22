@@ -47,6 +47,8 @@ message = build_email(
     recipients=["exec1@example.com", "exec2@example.com"],
     summary_text=summary.summary_text,
     transcript_path=summary.transcript_path,
+    company="ACME Corp",
+    symbol="ACME",
 )
 
 send_email(
@@ -58,8 +60,9 @@ send_email(
 )
 ```
 
-The `build_email` helper attaches the plain-text transcript and uses your summary as the message
-body, allowing recipients to skim quickly and drill into the source material.
+The `build_email` helper formats a four-sentence overview in the email body, attaches a nicely
+formatted PDF summary, and includes the raw transcript so recipients can skim quickly or drill
+into the source material without truncation.
 
 If you pass an empty recipient list or a missing transcript file, `build_email` will raise
 an explicit error to help you surface configuration problems before attempting delivery.

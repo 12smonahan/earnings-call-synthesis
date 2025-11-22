@@ -51,11 +51,11 @@ def _build_user_prompt(company: str, transcript: str) -> str:
     return (
         f"You are reviewing the {company} earnings call transcript.\n"
         "Summarize for a consumer lending competitor CEO preparing a counter-strategy.\n"
-        "Deliver ~2,000 words total with a ~300 word executive summary followed by deep dives into each section.\n"
+        "Deliver 2,500-3,000 words total with a ~350 word executive summary followed by multi-paragraph deep dives for every section.\n"
         "Use explicit metrics (levels and directionality), cite product names, and call out signals that demand a response.\n"
         "Keep prose direct and decisive, but format as plain text (no Markdown or bullet symbols).\n"
         "For readability in email, use uppercase section headers, short paragraphs, and divider lines made of '=' characters between major sections.\n"
-        "Do not truncate sections—ensure each requested area is fully covered even if the response is lengthy.\n\n"
+        "Do not truncate sections—ensure each requested area is fully covered even if the response is lengthy, and keep writing until every deep dive is complete.\n\n"
         "Required structure:\n"
         "1) EXECUTIVE SUMMARY (~300 words focused on competitive implications)\n"
         "2) ECONOMIC PERFORMANCE\n"
@@ -78,7 +78,7 @@ def synthesize_transcript(
     company: str,
     model: str = "gpt-4.1",
     client: Optional[OpenAI] = None,
-    max_output_tokens: int = 8000,
+    max_output_tokens: int = 16000,
     extra_instructions: Optional[Iterable[str]] = None,
     transcript_text_override: Optional[str] = None,
 ) -> TranscriptSummary:
@@ -135,7 +135,7 @@ def summarize_text(
     company: str,
     model: str = "gpt-4.1",
     client: Optional[OpenAI] = None,
-    max_output_tokens: int = 8000,
+    max_output_tokens: int = 16000,
     extra_instructions: Optional[Iterable[str]] = None,
 ) -> str:
     """Summarize a transcript string without reading from disk.
