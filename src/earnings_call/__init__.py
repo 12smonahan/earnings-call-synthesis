@@ -1,3 +1,3 @@
 """Utilities for summarizing earnings call transcripts and notifying stakeholders."""
 
-__all__ = ["summarizer", "emailer", "pipeline", "transcripts"]
+__all__ = ["summarizer", "emailer", "pipeline", "transcripts", "env"]
