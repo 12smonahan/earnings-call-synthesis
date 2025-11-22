@@ -11,6 +11,7 @@ from typing import Iterable, List
 
 import yaml
 
+from earnings_call.env import get_int_env
 from earnings_call.pipeline import generate_and_email_transcript
 
 
@@ -124,7 +125,7 @@ def main() -> None:
 
     sender = os.environ["SENDER_EMAIL"]
     smtp_host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
-    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_port = get_int_env("SMTP_PORT", 587)
     smtp_username = os.environ.get("SMTP_USERNAME")
     smtp_password = os.environ.get("SMTP_PASSWORD")
     transcript_api_key = os.environ.get("RAPIDAPI_KEY")

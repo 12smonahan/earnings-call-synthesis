@@ -7,6 +7,7 @@ from email.message import EmailMessage
 
 import pytest
 
+from earnings_call.env import get_int_env
 from earnings_call.pipeline import generate_and_email_transcript
 
 
@@ -52,7 +53,7 @@ def test_upst_pipeline_emails_summary_and_transcript(monkeypatch: pytest.MonkeyP
         sender=required_env["SENDER_EMAIL"],
         recipients=["12smonahan@gmail.com"],
         smtp_host=required_env["SMTP_HOST"],
-        smtp_port=int(required_env["SMTP_PORT"]),
+        smtp_port=get_int_env("SMTP_PORT", 587),
         smtp_username=required_env["SMTP_USERNAME"],
         smtp_password=required_env["SMTP_PASSWORD"],
         transcript_api_key=required_env["RAPIDAPI_KEY"],

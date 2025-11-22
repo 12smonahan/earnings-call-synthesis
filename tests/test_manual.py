@@ -118,7 +118,9 @@ def test_email_builder():
     
     # Check for SMTP configuration
     smtp_host = os.getenv("SMTP_HOST")
-    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    from earnings_call.env import get_int_env
+
+    smtp_port = get_int_env("SMTP_PORT", 587)
     smtp_username = os.getenv("SMTP_USERNAME")
     smtp_password = os.getenv("SMTP_PASSWORD")
     use_tls = os.getenv("SMTP_USE_TLS", "true").strip().lower() not in {"0", "false", "no", "off"}
