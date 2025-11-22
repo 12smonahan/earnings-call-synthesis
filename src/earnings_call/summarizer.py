@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import OrderedDict
 from dataclasses import dataclass
 import json
+import re
 from pathlib import Path
 from typing import Iterable, Optional
 
@@ -121,6 +122,30 @@ SECTION_PROMPTS: list[SectionPrompt] = [
 ]
 
 
+def required_section_titles() -> list[str]:
+    """Return the ordered list of expected section titles."""
+
+    titles: list[str] = []
+    seen: set[str] = set()
+    for prompt in SECTION_PROMPTS:
+        if prompt.title in seen:
+            continue
+        titles.append(prompt.title)
+        seen.add(prompt.title)
+    return titles
+
+
+def find_missing_sections(summary_text: str, required_titles: Iterable[str]) -> list[str]:
+    """Identify which required section headers are absent from the summary."""
+
+    missing: list[str] = []
+    for title in required_titles:
+        header_pattern = rf"(?mi)^\s*\d+\)\s*{re.escape(title)}\b"
+        if not re.search(header_pattern, summary_text):
+            missing.append(title)
+    return missing
+
+
 def _build_user_prompt(company: str, transcript: str) -> str:
     """Create the instruction prompt for the model.
 
@@ -194,7 +219,7 @@ def synthesize_transcript(
     max_output_tokens: int = 16000,
     extra_instructions: Optional[Iterable[str]] = None,
     transcript_text_override: Optional[str] = None,
-    use_sectioned_prompts: bool = False,
+    use_sectioned_prompts: bool = True,
 ) -> TranscriptSummary:
     """Read a transcript file and return a synthesized summary.
 
@@ -235,7 +260,17 @@ def synthesize_transcript(
     staging_path = staging_dir / f"{path.stem}_summary_response.txt"
 
     if use_sectioned_prompts:
-        per_section_tokens = max(400, max_output_tokens // len(SECTION_PROMPTS))
+        unique_section_titles = []
+        seen_titles: set[str] = set()
+        for prompt in SECTION_PROMPTS:
+            if prompt.title not in seen_titles:
+                unique_section_titles.append(prompt.title)
+                seen_titles.add(prompt.title)
+
+        per_section_tokens = max(
+            1200,
+            max_output_tokens // max(1, len(unique_section_titles)),
+        )
         stitched_sections: "OrderedDict[str, list[str]]" = OrderedDict()
         staged_responses: list[dict[str, object]] = []
 

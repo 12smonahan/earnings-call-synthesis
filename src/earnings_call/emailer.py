@@ -43,6 +43,23 @@ def build_email(
 
     transcript = path.read_text(encoding="utf-8")
 
+    def _parse_summary_sections(summary: str) -> list[tuple[str, str]]:
+        header_regex = re.compile(r"(?m)^\s*(\d+\)\s+[^\n]+)")
+        matches = list(header_regex.finditer(summary))
+        sections: list[tuple[str, str]] = []
+
+        if not matches:
+            return sections
+
+        for idx, match in enumerate(matches):
+            start = match.end()
+            end = matches[idx + 1].start() if idx + 1 < len(matches) else len(summary)
+            body = summary[start:end].strip()
+            body = re.sub(r"(?m)^=+\s*$", "", body).strip()
+            sections.append((match.group(1).strip(), body))
+
+        return sections
+
     def _extract_call_date(transcript_file: Path) -> Optional[str]:
         match = re.search(r"_(\d{4}-\d{2}-\d{2})", transcript_file.stem)
         return match.group(1) if match else None
@@ -71,22 +88,41 @@ def build_email(
         pdf.cell(0, 8, _sanitize_pdf_text(meta_line), ln=True)
         pdf.ln(6)
 
-        pdf.set_font("Helvetica", "B", 12)
-        pdf.cell(0, 8, "Executive Summary", ln=True)
-        pdf.ln(2)
+        parsed_sections = _parse_summary_sections(summary)
 
-        pdf.set_font("Helvetica", "", 11)
-        paragraphs = [
-            block.strip()
-            for block in re.split(r"\n\s*\n", summary)
-            if block.strip()
-        ]
-        if not paragraphs and summary.strip():
-            paragraphs = [summary.strip()]
+        if parsed_sections:
+            for idx, (header, body) in enumerate(parsed_sections):
+                if idx > 0:
+                    pdf.add_page()
+                pdf.set_font("Helvetica", "B", 12)
+                pdf.cell(0, 8, _sanitize_pdf_text(header), ln=True)
+                pdf.ln(2)
 
-        for paragraph in paragraphs:
-            pdf.multi_cell(0, 7, _sanitize_pdf_text(paragraph))
-            pdf.ln(3)
+                pdf.set_font("Helvetica", "", 11)
+                paragraphs = [
+                    block.strip()
+                    for block in re.split(r"\n\s*\n", body)
+                    if block.strip()
+                ]
+                if not paragraphs and body:
+                    paragraphs = [body]
+
+                for paragraph in paragraphs:
+                    pdf.multi_cell(0, 7, _sanitize_pdf_text(paragraph))
+                    pdf.ln(3)
+        else:
+            pdf.set_font("Helvetica", "", 11)
+            paragraphs = [
+                block.strip()
+                for block in re.split(r"\n\s*\n", summary)
+                if block.strip()
+            ]
+            if not paragraphs and summary.strip():
+                paragraphs = [summary.strip()]
+
+            for paragraph in paragraphs:
+                pdf.multi_cell(0, 7, _sanitize_pdf_text(paragraph))
+                pdf.ln(3)
 
         pdf.output(pdf_path)
         return pdf_path
