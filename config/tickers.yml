@@ -1,0 +1,18 @@
+# Managed list of tickers for the main pipeline workflow.
+#
+# Each entry tracks the last processed earnings call date and the next expected
+# date. The workflow will process tickers whose `earnings_date` was yesterday,
+# then roll the dates forward.
+tickers:
+  - symbol: AAPL
+    company: Apple Inc.
+    earnings_date: 2024-06-01
+    next_earnings_date: 2024-09-01
+    recipients:
+      - investor.relations@example.com
+  - symbol: MSFT
+    company: Microsoft Corporation
+    earnings_date: 2024-06-15
+    next_earnings_date: 2024-09-15
+    recipients:
+      - finance-team@example.com
