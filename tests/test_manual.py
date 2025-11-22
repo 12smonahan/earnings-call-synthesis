@@ -80,8 +80,8 @@ def test_summarizer():
         summary = synthesize_transcript(
             transcript_path,
             company=DEFAULT_COMPANY,
-            model="gpt-4o-mini",
-            max_output_tokens=400,  # Shorter for testing
+            model="gpt-4.1",
+            max_output_tokens=16000,  # Shorter for testing
         )
         
         print(f"✓ Success! Summary generated ({len(summary.summary_text)} characters)")
