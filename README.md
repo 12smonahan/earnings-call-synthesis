@@ -135,6 +135,19 @@ pytest -m integration tests/test_upst_pipeline.py
 The test pins the recipients to `12smonahan@gmail.com` so you can run it as-is once your environment
 is configured. The SMTP call is monkeypatched, but attachment assertions still occur before send.
 
+## GitHub Actions
+
+Two workflows keep the pipelines runnable from GitHub:
+
+* `.github/workflows/earnings-call-aapl.yml` runs `scripts/send_latest_aapl.py` on a weekday cron and
+  supports manual dispatches for debugging.
+* `.github/workflows/test-upst-pipeline.yml` provides a manual "Test UPST Pipeline" button in the
+  Actions tab. It installs the project, loads the same environment variables as the local test, and
+  executes `scripts/run_upst_integration_test.py` (a tiny pytest wrapper).
+
+Add the required secrets (`OPENAI_API_KEY`, `RAPIDAPI_KEY`, SMTP fields, and optional overrides) in
+the repository settings so these workflows can authenticate.
+
 ## Setup
 
 This project uses Python 3.12 and Poetry for dependency management.

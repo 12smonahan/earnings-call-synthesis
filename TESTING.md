@@ -197,23 +197,40 @@ pytest tests/
 
 ## Integration Testing
 
-Test the full pipeline with the provided script:
+### UPST end-to-end test
+
+Use the pytest wrapper to run the live UPST pipeline locally:
 
 ```bash
-# Set all required environment variables
-export OPENAI_API_KEY=your-key
 export RAPIDAPI_KEY=your-key
-export SENDER_EMAIL=your-email@example.com
+export OPENAI_API_KEY=your-key
 export SMTP_HOST=smtp.example.com
+export SMTP_PORT="587"
 export SMTP_USERNAME=smtp-user
 export SMTP_PASSWORD=smtp-pass
+export SENDER_EMAIL=your-email@example.com
 
-# Run the pipeline script (configured for UPST)
+python scripts/run_upst_integration_test.py
+```
+
+This executes the `integration`-marked pytest that fetches the latest transcript, builds summary and
+transcript attachments, and validates email construction (SMTP send is monkeypatched).
+
+### Apple pipeline script
+
+To email the latest Apple earnings call summary, set the same environment variables as above plus
+any overrides (e.g., `RECIPIENT_EMAIL`) and run:
+
+```bash
 python scripts/send_latest_aapl.py
 ```
 
-This will:
-1. Fetch latest UPST transcript
-2. Generate summary
-3. Email both to the recipient
+### GitHub Actions coverage
 
+* `.github/workflows/test-upst-pipeline.yml` mirrors `scripts/run_upst_integration_test.py` and can
+  be manually triggered from the Actions tab ("Run workflow").
+* `.github/workflows/earnings-call-aapl.yml` runs `scripts/send_latest_aapl.py` on a weekday cron and
+  also supports manual dispatch.
+
+Ensure the repository secrets include `OPENAI_API_KEY`, `RAPIDAPI_KEY`, and the SMTP settings so the
+workflows can authenticate.
