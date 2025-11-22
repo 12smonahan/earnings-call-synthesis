@@ -39,6 +39,7 @@ def generate_and_email_transcript(
     max_output_tokens: int = 16000,
     extra_instructions: Optional[Iterable[str]] = None,
     transcript_text_override: Optional[str] = None,
+    use_sectioned_prompts: bool = True,
 ) -> TranscriptSummary:
     """Fetch, summarize, and email a transcript.
 
@@ -73,6 +74,7 @@ def generate_and_email_transcript(
         max_output_tokens=max_output_tokens,
         extra_instructions=extra_instructions,
         transcript_text_override=transcript_text_override,
+        use_sectioned_prompts=use_sectioned_prompts,
     )
 
     message = build_email(

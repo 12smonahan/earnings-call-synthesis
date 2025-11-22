@@ -34,6 +34,45 @@ Write with the urgency and specificity of a CEO preparing a counter-move playboo
 Pay particular attention to details that may indicate changing health of the US consumer, the trajectory of this companay, and any key competitive intelligence (underwriting changes, new product features, etc.)
 """
 
+SECTION_PROMPTS: list[tuple[str, str]] = [
+    (
+        "EXECUTIVE SUMMARY",
+        "Synthesize the single most important question a rival CEO should ask after this call and answer it with specific signals and metrics. Provide 1-3 focused paragraphs (roughly 300-400 words).",
+    ),
+    (
+        "ECONOMIC PERFORMANCE",
+        "Explain revenue, margins, unit economics, and cost trends. Anchor on changes versus last quarter/year with supporting metrics. Provide 1-3 decisive paragraphs tied to a key strategic question.",
+    ),
+    (
+        "CREDIT PERFORMANCE",
+        "Cover losses, delinquency, reserves, and underwriting shifts. Highlight directional changes and any trade-offs being made. Provide a 1-3 paragraph synthesis answering the main credit health question.",
+    ),
+    (
+        "MACRO & CONSUMER HEALTH",
+        "Describe demand signals, spending patterns, and borrower stress indicators. Connect commentary to consumer strength/weakness in 1-3 paragraphs framed around the sharpest question raised by the call.",
+    ),
+    (
+        "NEW PRODUCTS, PARTNERSHIPS, OR TECHNOLOGY",
+        "Identify launches, pilots, partnerships, distribution changes, and tech investments. Summarize the implications in 1-3 paragraphs by answering the most urgent competitive question about these moves.",
+    ),
+    (
+        "CUTTING-EDGE OR NOTEWORTHY ITEMS (EXPERIMENTAL, DIFFERENTIATED)",
+        "Call out experimental ideas, differentiated capabilities, or unusual tactics. Deliver 1-3 paragraphs answering the key question: what here could shift the playing field?",
+    ),
+    (
+        "RISKS & WATCH-OUTS",
+        "List emerging risks (regulatory, liquidity, operational, reputation) and explain why they matter now. 1-3 paragraphs tied to the critical risk question for a competitor.",
+    ),
+    (
+        "TACTICAL RESPONSES WE SHOULD CONSIDER AS A COMPETITOR",
+        "Recommend concrete counter-moves, pricing/credit responses, or channel plays we should make. 1-3 paragraphs that directly answer what we must do next and why.",
+    ),
+    (
+        "ANALYST Q&A SYNTHESIS",
+        "Summarize analyst questions and management answers, focusing on themes and what they reveal. Provide 1-3 paragraphs that answer the key question revealed by Q&A themes.",
+    ),
+]
+
 
 def _build_user_prompt(company: str, transcript: str) -> str:
     """Create the instruction prompt for the model.
@@ -72,6 +111,25 @@ def _build_user_prompt(company: str, transcript: str) -> str:
     )
 
 
+def _build_section_prompt(company: str, transcript: str, section_title: str, section_instruction: str) -> str:
+    """Create a focused prompt for an individual section.
+
+    Each section asks the model to answer the sharpest question raised by that domain
+    in 1-3 paragraphs so that responses can be safely stitched together without
+    truncation of a monolithic response.
+    """
+
+    transcript_block = transcript.strip()
+    return (
+        f"You are reviewing the {company} earnings call transcript.\n"
+        f"Focus exclusively on the section '{section_title}' and ignore all other headings.\n"
+        "For this section, synthesize the single most important question a rival CEO should ask and answer it with decisive prose (no bullets).\n"
+        "Use metrics, product names, and directional changes where available. Keep to 1-3 short paragraphs to maintain density.\n"
+        f"Section guidance: {section_instruction}\n\n"
+        f"Transcript:\n\"\"\"{transcript_block}\"\"\"\n"
+    )
+
+
 def synthesize_transcript(
     transcript_path: Path | str,
     *,
@@ -81,6 +139,7 @@ def synthesize_transcript(
     max_output_tokens: int = 16000,
     extra_instructions: Optional[Iterable[str]] = None,
     transcript_text_override: Optional[str] = None,
+    use_sectioned_prompts: bool = False,
 ) -> TranscriptSummary:
     """Read a transcript file and return a synthesized summary.
 
@@ -90,10 +149,13 @@ def synthesize_transcript(
         model: OpenAI chat model identifier to use.
         client: Optional shared OpenAI client. If not provided, a new client is created
             using environment configuration.
-        max_output_tokens: Upper bound for tokens in the generated summary.
+        max_output_tokens: Upper bound for tokens in the generated summary. For sectioned
+            prompts the per-section cap is derived from this value.
         extra_instructions: Optional list of bullet instructions appended to the
             system message for caller-specific guidance.
         transcript_text_override: Raw transcript content to use instead of reading from disk.
+        use_sectioned_prompts: If True, split the request into per-section prompts to avoid
+            truncation and stitch the responses together.
 
     Returns:
         TranscriptSummary containing the synthesized content.
@@ -111,20 +173,44 @@ def synthesize_transcript(
     guidance = "\n".join(f"- {line}" for line in guidance_lines)
     system_prompt = SYSTEM_PROMPT + (f"\nCaller notes:\n{guidance}" if guidance else "")
 
-    message = _build_user_prompt(company, transcript)
-
     api_client = client or OpenAI()
-    response = api_client.chat.completions.create(
-        model=model,
-        temperature=0.2,
-        max_tokens=max_output_tokens,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": message},
-        ],
-    )
 
-    summary_text = response.choices[0].message.content or ""
+    if use_sectioned_prompts:
+        per_section_tokens = max(400, max_output_tokens // len(SECTION_PROMPTS))
+        section_texts: list[str] = []
+        for idx, (title, instruction) in enumerate(SECTION_PROMPTS, start=1):
+            message = _build_section_prompt(company, transcript, title, instruction)
+            response = api_client.chat.completions.create(
+                model=model,
+                temperature=0.2,
+                max_tokens=per_section_tokens,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": message},
+                ],
+            )
+            section_body = response.choices[0].message.content or ""
+            formatted = (
+                f"{idx}) {title}\n"
+                f"{'=' * 80}\n"
+                f"{section_body.strip()}\n"
+            )
+            section_texts.append(formatted)
+
+        summary_text = "\n\n".join(section_texts)
+    else:
+        message = _build_user_prompt(company, transcript)
+        response = api_client.chat.completions.create(
+            model=model,
+            temperature=0.2,
+            max_tokens=max_output_tokens,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": message},
+            ],
+        )
+
+        summary_text = response.choices[0].message.content or ""
 
     return TranscriptSummary(company=company, transcript_path=path, summary_text=summary_text)
 
@@ -137,6 +223,7 @@ def summarize_text(
     client: Optional[OpenAI] = None,
     max_output_tokens: int = 16000,
     extra_instructions: Optional[Iterable[str]] = None,
+    use_sectioned_prompts: bool = False,
 ) -> str:
     """Summarize a transcript string without reading from disk.
 
@@ -151,5 +238,6 @@ def summarize_text(
         max_output_tokens=max_output_tokens,
         extra_instructions=extra_instructions,
         transcript_text_override=transcript,
+        use_sectioned_prompts=use_sectioned_prompts,
     )
     return summary.summary_text
