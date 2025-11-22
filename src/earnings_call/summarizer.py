@@ -6,7 +6,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Optional
 
+from dotenv import load_dotenv
 from openai import OpenAI
+
+# Load environment variables from .env file if it exists
+load_dotenv()
 
 
 @dataclass
