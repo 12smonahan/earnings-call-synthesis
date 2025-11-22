@@ -124,6 +124,11 @@ def synthesize_transcript(
         ],
     )
 
+    staging_dir = Path("summary_staging")
+    staging_dir.mkdir(parents=True, exist_ok=True)
+    staging_path = staging_dir / f"{path.stem}_summary_response.txt"
+    staging_path.write_text(response.model_dump_json(indent=2), encoding="utf-8")
+
     summary_text = response.choices[0].message.content or ""
 
     return TranscriptSummary(company=company, transcript_path=path, summary_text=summary_text)
