@@ -1,7 +1,8 @@
-"""Manual testing script for the earnings call synthesis codebase.
+"""Manual end-to-end test for the earnings call synthesis pipeline.
 
-Run this script to test each component individually.
-Make sure your .env file is set up with OPENAI_API_KEY and RAPIDAPI_KEY.
+This script exercises the real transcript fetch, summarization, and email
+assembly workflow for Upstart (UPST). Configure OPENAI_API_KEY and
+RAPIDAPI_KEY in your .env file so it can hit the live services.
 """
 
 import os
@@ -20,6 +21,10 @@ if str(src_path) not in sys.path:
 load_dotenv()
 
 
+DEFAULT_SYMBOL = "UPST"
+DEFAULT_COMPANY = "Upstart Holdings"
+
+
 def test_fetch_transcript():
     """Test fetching a transcript."""
     print("\n" + "=" * 60)
@@ -28,7 +33,7 @@ def test_fetch_transcript():
     
     from earnings_call.transcripts import fetch_latest_transcript
     
-    symbol = "AAPL"
+    symbol = DEFAULT_SYMBOL
     print(f"Fetching transcript for {symbol}...")
     
     result = fetch_latest_transcript(symbol)
@@ -50,14 +55,23 @@ def test_summarizer():
     # Check if we have a transcript file
     transcript_dir = Path("transcripts")
     transcript_files = list(transcript_dir.glob("*.txt"))
-    
+
     if not transcript_files:
-        print("✗ No transcript files found in transcripts/ directory")
-        print("  Run test_fetch_transcript() first or add a transcript file manually")
-        return False
-    
-    # Use the first transcript found
-    transcript_path = transcript_files[0]
+        print("No transcript found locally; fetching latest before summarizing...")
+        try:
+            from earnings_call.transcripts import fetch_latest_transcript
+
+            fetch_result = fetch_latest_transcript(DEFAULT_SYMBOL)
+            if not fetch_result:
+                print("✗ Failed to fetch transcript for summarization")
+                return False
+            transcript_files = [Path(fetch_result)]
+        except Exception as e:
+            print(f"✗ Could not fetch transcript automatically: {e}")
+            return False
+
+    # Use the most recently modified transcript
+    transcript_path = max(transcript_files, key=lambda p: p.stat().st_mtime)
     print(f"Using transcript: {transcript_path}")
     
     from earnings_call.summarizer import synthesize_transcript
@@ -65,7 +79,7 @@ def test_summarizer():
     try:
         summary = synthesize_transcript(
             transcript_path,
-            company="Test Company",
+            company=DEFAULT_COMPANY,
             model="gpt-4o-mini",
             max_output_tokens=400,  # Shorter for testing
         )
@@ -108,14 +122,14 @@ def test_email_builder():
         print("   Set SMTP_HOST, SMTP_USERNAME, and SMTP_PASSWORD to test email sending")
         return None
     
-    # Try to get a real summary if we have OpenAI key, otherwise use a test summary
+    # Try to get a real summary if we have OpenAI key, otherwise use a fallback summary
     summary_text = None
     if os.getenv("OPENAI_API_KEY"):
         try:
             from earnings_call.summarizer import synthesize_transcript
             summary = synthesize_transcript(
                 transcript_path,
-                company="Test Company",
+                company=DEFAULT_COMPANY,
                 model="gpt-4o-mini",
                 max_output_tokens=400,
             )
@@ -124,9 +138,11 @@ def test_email_builder():
         except Exception as e:
             print(f"Could not generate summary: {e}")
             print("Using test summary instead")
-    
+
     if not summary_text:
-        summary_text = "This is a test summary for the earnings call transcript."
+        summary_text = (
+            "Automated summary of the latest Upstart Holdings earnings call."
+        )
     
     from earnings_call.emailer import build_email, send_email
     
@@ -135,7 +151,7 @@ def test_email_builder():
     try:
         # Build the email
         message = build_email(
-            subject="Test Earnings Call Summary",
+            subject="Upstart Holdings Earnings Call Summary",
             sender=email_address,
             recipients=[email_address],
             summary_text=summary_text,
