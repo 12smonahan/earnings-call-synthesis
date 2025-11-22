@@ -76,11 +76,16 @@ def build_email(
         pdf.ln(2)
 
         pdf.set_font("Helvetica", "", 11)
-        for paragraph in summary.split("\n\n"):
-            cleaned = paragraph.strip()
-            if not cleaned:
-                continue
-            pdf.multi_cell(0, 7, _sanitize_pdf_text(cleaned))
+        paragraphs = [
+            block.strip()
+            for block in re.split(r"\n\s*\n", summary)
+            if block.strip()
+        ]
+        if not paragraphs and summary.strip():
+            paragraphs = [summary.strip()]
+
+        for paragraph in paragraphs:
+            pdf.multi_cell(0, 7, _sanitize_pdf_text(paragraph))
             pdf.ln(3)
 
         pdf.output(pdf_path)
