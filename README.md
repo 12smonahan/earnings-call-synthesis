@@ -2,7 +2,8 @@
 
 Utilities to synthesize earnings call transcripts for competitor monitoring. The summarization
 module produces analyst-style readouts using the OpenAI API, and the emailer module sends both the
-summary and full transcript to stakeholders.
+summary and full transcript to stakeholders. A small pipeline ties together transcript fetching,
+summarization, and delivery so you can get the latest call out to recipients in one command.
 
 ## Setup
 
@@ -11,7 +12,8 @@ summary and full transcript to stakeholders.
    pip install -r requirements.txt
    ```
 2. Set the `OPENAI_API_KEY` environment variable so the summarizer can authenticate.
-3. Ensure you have access to an SMTP server for sending emails (host, port, username/password if required).
+3. Set the `RAPIDAPI_KEY` environment variable to authorize Seeking Alpha transcript requests.
+4. Ensure you have access to an SMTP server for sending emails (host, port, username/password if required).
 
 ## Generating a summary
 
@@ -60,6 +62,52 @@ body, allowing recipients to skim quickly and drill into the source material.
 If you pass an empty recipient list or a missing transcript file, `build_email` will raise
 an explicit error to help you surface configuration problems before attempting delivery.
 Uses Seeking Alpha API to synthesize earnings call transcripts and send email triggers to users
+
+## End-to-end pipeline
+
+Use the pipeline helper when you want to stitch transcript fetching, summarization, and email
+delivery together.
+
+```python
+from earnings_call.pipeline import generate_and_email_transcript
+
+generate_and_email_transcript(
+    symbol="UPST",
+    company="Upstart",
+    sender="analyst@example.com",
+    recipients=["exec1@example.com"],
+    smtp_host="smtp.example.com",
+    smtp_username="smtp-user",
+    smtp_password="smtp-pass",
+)
+```
+
+Required environment for the above:
+
+* `RAPIDAPI_KEY` – Seeking Alpha API key for `fetch_transcript.py`.
+* `OPENAI_API_KEY` – OpenAI key for the summarizer.
+* SMTP variables per your server (`SMTP_HOST`, optional `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_USE_TLS`).
+
+The function returns a `TranscriptSummary` so callers can log or reuse the generated summary text.
+
+### Test script for Apple
+
+To email the latest Apple earnings call transcript and summary to `12smonahan@gmail.com`, provide
+SMTP credentials and run:
+
+```bash
+export SENDER_EMAIL="analyst@example.com"
+export SMTP_HOST="smtp.example.com"
+export SMTP_USERNAME="user"
+export SMTP_PASSWORD="pass"
+export RAPIDAPI_KEY="<rapidapi-key>"
+export OPENAI_API_KEY="<openai-key>"
+
+python scripts/send_latest_aapl.py
+```
+
+Use `RECIPIENT_EMAIL` to override the default destination, and `SMTP_PORT`/`SMTP_USE_TLS` to adjust
+mail transport settings.
 
 ## Setup
 
