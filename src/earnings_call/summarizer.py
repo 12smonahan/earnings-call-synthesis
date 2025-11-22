@@ -64,6 +64,7 @@ def _build_user_prompt(company: str, transcript: str) -> str:
         "  5) Cutting-edge or noteworthy items (experimental, differentiated)\n"
         "  6) Risks & watch-outs\n"
         "  7) Tactical responses we should consider as a competitor\n\n"
+        "  8) Specific synthesis of the questions that analysts asked and the answers given. Keep an eye out for themes in questions"
         "Emphasize details critical to a rival fintech CEO: pricing shifts, channel moves, capital or liquidity signals,\n"
         "operational changes, regulatory posture, and any data that hints at momentum or weakness.\n\n"
         f"Transcript:\n\"\"\"{transcript_block}\"\"\"\n"
