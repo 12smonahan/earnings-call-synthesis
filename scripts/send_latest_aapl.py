@@ -43,7 +43,7 @@ def main() -> None:
             use_tls=use_tls,
             transcript_api_key=os.getenv("RAPIDAPI_KEY"),
             model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
-            max_output_tokens=int(os.getenv("OPENAI_MAX_TOKENS", "800")),
+            max_output_tokens=int(os.getenv("OPENAI_MAX_TOKENS", "8000")),
         )
     except TranscriptPipelineError as exc:
         raise SystemExit(f"Transcript pipeline failed: {exc}") from exc

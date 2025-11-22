@@ -31,8 +31,10 @@ print(summary.summary_text)
 You can provide optional `extra_instructions` to highlight custom angles and adjust the OpenAI
 `model`, `max_output_tokens`, or supply a shared `client` instance.
 
-The summarizer will raise a `FileNotFoundError` if the transcript path is missing and a
-`ValueError` if provided content is empty, ensuring you catch data issues early.
+The summarizer targets a ~2,000-word, plain-text readout (no Markdown) optimized for email. It will
+raise a `FileNotFoundError` if the transcript path is missing and a `ValueError` if provided content
+is empty, ensuring you catch data issues early. Adjust `max_output_tokens` if you want a shorter or
+longer reply; the default is sized for the longer format.
 
 ## Emailing the summary and transcript
 

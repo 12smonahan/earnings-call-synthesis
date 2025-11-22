@@ -51,20 +51,21 @@ def _build_user_prompt(company: str, transcript: str) -> str:
     return (
         f"You are reviewing the {company} earnings call transcript.\n"
         "Summarize for a consumer lending competitor CEO preparing a counter-strategy.\n"
-        "Deliver ~1,000 words total with a ~200 word executive summary followed by deep dives into each section.\n"
+        "Deliver ~2,000 words total with a ~300 word executive summary followed by deep dives into each section.\n"
         "Use explicit metrics (levels and directionality), cite product names, and call out signals that demand a response.\n"
-        "Favor bullet-heavy structure with crisp section headers; keep prose direct and decisive.\n\n"
+        "Keep prose direct and decisive, but format as plain text (no Markdown or bullet symbols).\n"
+        "For readability in email, use uppercase section headers, short paragraphs, and divider lines made of '=' characters between major sections.\n"
+        "Do not truncate sections—ensure each requested area is fully covered even if the response is lengthy.\n\n"
         "Required structure:\n"
-        "- Executive summary (~200 words) focused on competitive implications.\n"
-        "- Detailed analysis covering:\n"
-        "  1) Economic performance\n"
-        "  2) Credit performance\n"
-        "  3) Macro & consumer health\n"
-        "  4) New products, partnerships, or technology\n"
-        "  5) Cutting-edge or noteworthy items (experimental, differentiated)\n"
-        "  6) Risks & watch-outs\n"
-        "  7) Tactical responses we should consider as a competitor\n\n"
-        "  8) Specific synthesis of the questions that analysts asked and the answers given. Keep an eye out for themes in questions"
+        "1) EXECUTIVE SUMMARY (~300 words focused on competitive implications)\n"
+        "2) ECONOMIC PERFORMANCE\n"
+        "3) CREDIT PERFORMANCE\n"
+        "4) MACRO & CONSUMER HEALTH\n"
+        "5) NEW PRODUCTS, PARTNERSHIPS, OR TECHNOLOGY\n"
+        "6) CUTTING-EDGE OR NOTEWORTHY ITEMS (EXPERIMENTAL, DIFFERENTIATED)\n"
+        "7) RISKS & WATCH-OUTS\n"
+        "8) TACTICAL RESPONSES WE SHOULD CONSIDER AS A COMPETITOR\n"
+        "9) ANALYST Q&A SYNTHESIS (synthesis of questions analysts asked and answers given, keeping an eye out for themes in questions)\n\n"
         "Emphasize details critical to a rival fintech CEO: pricing shifts, channel moves, capital or liquidity signals,\n"
         "operational changes, regulatory posture, and any data that hints at momentum or weakness.\n\n"
         f"Transcript:\n\"\"\"{transcript_block}\"\"\"\n"
@@ -77,7 +78,7 @@ def synthesize_transcript(
     company: str,
     model: str = "gpt-4.1",
     client: Optional[OpenAI] = None,
-    max_output_tokens: int = 3000,
+    max_output_tokens: int = 8000,
     extra_instructions: Optional[Iterable[str]] = None,
     transcript_text_override: Optional[str] = None,
 ) -> TranscriptSummary:
@@ -134,7 +135,7 @@ def summarize_text(
     company: str,
     model: str = "gpt-4.1",
     client: Optional[OpenAI] = None,
-    max_output_tokens: int = 3000,
+    max_output_tokens: int = 8000,
     extra_instructions: Optional[Iterable[str]] = None,
 ) -> str:
     """Summarize a transcript string without reading from disk.
