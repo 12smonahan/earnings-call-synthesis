@@ -53,25 +53,25 @@ def test_summarizer():
     print("=" * 60)
     
     # Check if we have a transcript file
-    transcript_dir = Path("transcripts")
-    transcript_files = list(transcript_dir.glob("*.txt"))
+    from earnings_call.transcripts import (
+        fetch_latest_transcript,
+        find_latest_local_transcript,
+    )
 
-    if not transcript_files:
-        print("No transcript found locally; fetching latest before summarizing...")
+    transcript_path = find_latest_local_transcript(DEFAULT_SYMBOL)
+
+    if not transcript_path:
+        print("No UPST transcript found locally; fetching latest before summarizing...")
         try:
-            from earnings_call.transcripts import fetch_latest_transcript
-
             fetch_result = fetch_latest_transcript(DEFAULT_SYMBOL)
             if not fetch_result:
                 print("✗ Failed to fetch transcript for summarization")
                 return False
-            transcript_files = [Path(fetch_result)]
+            transcript_path = Path(fetch_result)
         except Exception as e:
             print(f"✗ Could not fetch transcript automatically: {e}")
             return False
 
-    # Use the most recently modified transcript
-    transcript_path = max(transcript_files, key=lambda p: p.stat().st_mtime)
     print(f"Using transcript: {transcript_path}")
     
     from earnings_call.summarizer import synthesize_transcript
@@ -101,14 +101,20 @@ def test_email_builder():
     print("TEST 3: Send Email")
     print("=" * 60)
     
-    transcript_dir = Path("transcripts")
-    transcript_files = list(transcript_dir.glob("*.txt"))
-    
-    if not transcript_files:
-        print("✗ No transcript files found")
-        return False
-    
-    transcript_path = transcript_files[0]
+    from earnings_call.transcripts import (
+        fetch_latest_transcript,
+        find_latest_local_transcript,
+    )
+
+    transcript_path = find_latest_local_transcript(DEFAULT_SYMBOL)
+
+    if not transcript_path:
+        print("No UPST transcript found locally; fetching latest before emailing...")
+        fetch_result = fetch_latest_transcript(DEFAULT_SYMBOL)
+        if not fetch_result:
+            print("✗ No transcript files found")
+            return False
+        transcript_path = Path(fetch_result)
     
     # Check for SMTP configuration
     smtp_host = os.getenv("SMTP_HOST")

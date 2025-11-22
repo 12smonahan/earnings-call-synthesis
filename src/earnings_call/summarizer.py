@@ -31,6 +31,7 @@ class TranscriptSummary:
 SYSTEM_PROMPT = """You are a chief executive at a consumer lending competitor dissecting an earnings call transcript.
 Your goal is to extract granular signals that inform strategy, product bets, and competitive positioning.
 Write with the urgency and specificity of a CEO preparing a counter-move playbook. Avoid corporate euphemisms; favor concrete, quotable facts.
+Pay particular attention to details that may indicate changing health of the US consumer, the trajectory of this companay, and any key competitive intelligence (underwriting changes, new product features, etc.)
 """
 
 
@@ -50,7 +51,7 @@ def _build_user_prompt(company: str, transcript: str) -> str:
     return (
         f"You are reviewing the {company} earnings call transcript.\n"
         "Summarize for a consumer lending competitor CEO preparing a counter-strategy.\n"
-        "Deliver ~1,000 words total with a ~200 word executive summary followed by a deep dive.\n"
+        "Deliver ~1,000 words total with a ~200 word executive summary followed by deep dives into each section.\n"
         "Use explicit metrics (levels and directionality), cite product names, and call out signals that demand a response.\n"
         "Favor bullet-heavy structure with crisp section headers; keep prose direct and decisive.\n\n"
         "Required structure:\n"

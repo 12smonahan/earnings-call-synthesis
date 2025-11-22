@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Iterable, Optional
 import smtplib
 
+from fpdf import FPDF
+
 
 def build_email(
     *,
@@ -32,6 +34,29 @@ def build_email(
 
     transcript = path.read_text(encoding="utf-8")
 
+    def _make_pdf(transcript_text: str, transcript_file: Path) -> Path:
+        output_dir = Path("transcript_pdfs")
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        pdf_path = output_dir / f"{transcript_file.stem}.pdf"
+
+        pdf = FPDF()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        pdf.add_page()
+        pdf.set_font("Helvetica", "B", 14)
+        pdf.cell(0, 10, "Earnings Call Transcript", ln=True)
+        pdf.set_font("Helvetica", "", 11)
+        pdf.ln(4)
+
+        for line in transcript_text.splitlines():
+            content = line.strip() or " "
+            pdf.multi_cell(0, 7, content)
+
+        pdf.output(pdf_path)
+        return pdf_path
+
+    pdf_attachment = _make_pdf(transcript, path)
+
     message = EmailMessage()
     message["Subject"] = subject
     message["From"] = sender
@@ -39,10 +64,10 @@ def build_email(
     message.set_content(summary_text)
 
     message.add_attachment(
-        transcript.encode('utf-8'),
-        maintype="text",
-        subtype="plain",
-        filename=path.name,
+        pdf_attachment.read_bytes(),
+        maintype="application",
+        subtype="pdf",
+        filename=pdf_attachment.name,
     )
 
     return message

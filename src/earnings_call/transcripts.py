@@ -3,6 +3,7 @@
 import os
 import requests
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
@@ -12,6 +13,33 @@ load_dotenv()
 
 # API Configuration
 HOST = "seeking-alpha.p.rapidapi.com"
+
+
+def _select_transcript_id(data_items):
+    """Return the first transcript-like item ID while skipping slide decks."""
+
+    def is_transcript(attributes):
+        title = attributes.get("title", "").lower()
+        content_type = attributes.get("contentType", "").lower()
+
+        transcript_like = (
+            content_type == "transcript"
+            or "earnings call" in title
+            or "prepared remarks" in title
+        )
+
+        has_slide_terms = any(
+            keyword in title for keyword in ["slide deck", "slides", "presentation"]
+        )
+
+        return transcript_like and not has_slide_terms
+
+    for item in data_items:
+        attributes = item.get("attributes", {})
+        if is_transcript(attributes) and item.get("id"):
+            return item["id"]
+
+    return None
 
 
 def get_latest_transcript_id(symbol: str, api_key: Optional[str] = None) -> Optional[str]:
@@ -27,7 +55,7 @@ def get_latest_transcript_id(symbol: str, api_key: Optional[str] = None) -> Opti
             )
 
     url = f"https://{HOST}/transcripts/v2/list"
-    params = {"id": symbol.lower(), "size": 1, "number": 1}
+    params = {"id": symbol.lower(), "size": 50, "number": 1}
     headers = {
         "x-rapidapi-key": api_key,
         "x-rapidapi-host": HOST,
@@ -60,10 +88,11 @@ def get_latest_transcript_id(symbol: str, api_key: Optional[str] = None) -> Opti
             print(f"No transcript items returned for symbol {symbol}")
             return None
 
-        first_item = data_items[0]
-        transcript_id = first_item.get("id")
+        transcript_id = _select_transcript_id(data_items)
         if not transcript_id:
-            print(f"Transcript ID missing in response item: {first_item}")
+            print(
+                "No transcript-like items found (filtered out slide decks and presentations)"
+            )
             return None
 
         print(f"Found transcript ID: {transcript_id}")
@@ -120,6 +149,33 @@ def get_earnings_transcript(transcript_id: str, api_key: Optional[str] = None) -
     except requests.exceptions.RequestException as e:
         print(f"Error fetching transcript from API: {e}")
         return None
+
+
+def find_latest_local_transcript(
+    symbol: str, directory: str | Path = "transcripts"
+) -> Optional[Path]:
+    """Return the most recently modified transcript file for the given symbol.
+
+    The lookup is case-insensitive and only considers files that follow the
+    "*_transcript.txt" naming convention for the provided ticker. This prevents
+    cross-company mix-ups when multiple transcripts are present locally.
+    """
+
+    dir_path = Path(directory)
+    if not dir_path.exists():
+        return None
+
+    target_prefix = f"{symbol.upper()}_"
+    candidates = [
+        path
+        for path in dir_path.glob("*_transcript.txt")
+        if path.name.upper().startswith(target_prefix)
+    ]
+
+    if not candidates:
+        return None
+
+    return max(candidates, key=lambda p: p.stat().st_mtime)
 
 
 def fetch_latest_transcript(symbol: str = "UPST", api_key: Optional[str] = None) -> Optional[str]:
