@@ -1,0 +1,39 @@
+{
+  "id": "chatcmpl-CeWwceeQ1Dj3sVIDoZv8PrPhI8dZu",
+  "choices": [
+    {
+      "finish_reason": "length",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "EXECUTIVE SUMMARY\n\nUpstart Holdings has demonstrated significant growth in Q3 2025, with transaction volume increasing by 80% year-on-year and revenue up 71%. However, the company has also exhibited a cautious approach to underwriting, leading to a reduction in approval rates and a drop in conversion rates from 23.9% to 20.6%. This conservative model response to macroeconomic signals indicates a strategic pivot that we must closely monitor. Upstart's application volume surged to over 2 million, a 30% increase from Q2, suggesting robust consumer demand, yet the conversion lag indicates potential weaknesses in their underwriting model.\n\nUpstart's new product lines, particularly in auto and home loans, are gaining traction, with transaction volumes in these segments growing by over 300% year-on-year. Their partnerships with banks and credit unions are yielding competitive advantages, offering rates up to 300 basis points lower than rivals. The company is also innovating with a hybrid auto secured personal loan product, which could disrupt traditional auto financing.\n\nDespite the positive growth metrics, Upstart's cautious underwriting approach may present an opportunity for us to capture market share, particularly among consumers who may be underserved by their tightened criteria. Their focus on AI-driven underwriting and rapid model adjustments is a double-edged sword; while it enhances risk management, it could also lead to missed opportunities in a competitive landscape.\n\nAs we strategize our response, we need to consider enhancing our own underwriting flexibility, exploring partnerships that can offer competitive rates, and investing in technology that can improve our customer acquisition and retention. Upstart's strong performance in the face of macroeconomic challenges suggests that they are a formidable competitor, but their current model adjustments may create openings for us to exploit.\n\n============================================================\n\nECONOMIC PERFORMANCE\n\nUpstart's Q3 2025 results reflect a robust economic performance characterized by substantial growth metrics. The company reported a total revenue of approximately $277 million, marking a 71% increase year-on-year",
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": null
+      }
+    }
+  ],
+  "created": 1763775794,
+  "model": "gpt-4o-mini-2024-07-18",
+  "object": "chat.completion",
+  "service_tier": "default",
+  "system_fingerprint": "fp_560af6e559",
+  "usage": {
+    "completion_tokens": 400,
+    "prompt_tokens": 18185,
+    "total_tokens": 18585,
+    "completion_tokens_details": {
+      "accepted_prediction_tokens": 0,
+      "audio_tokens": 0,
+      "reasoning_tokens": 0,
+      "rejected_prediction_tokens": 0
+    },
+    "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cached_tokens": 0
+    }
+  }
+}

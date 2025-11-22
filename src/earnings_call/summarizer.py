@@ -178,9 +178,7 @@ def synthesize_transcript(
     staging_dir = Path("summary_staging")
     staging_dir.mkdir(parents=True, exist_ok=True)
     staging_path = staging_dir / f"{path.stem}_summary_response.txt"
-    staging_path.write_text(response.model_dump_json(indent=2), encoding="utf-8")
 
-    summary_text = response.choices[0].message.content or ""
     if use_sectioned_prompts:
         per_section_tokens = max(400, max_output_tokens // len(SECTION_PROMPTS))
         section_texts: list[str] = []
@@ -195,7 +193,14 @@ def synthesize_transcript(
                     {"role": "user", "content": message},
                 ],
             )
-            section_body = response.choices[0].message.content or ""
+            raw_content = response.choices[0].message.content
+            if isinstance(raw_content, list):
+                section_body = "".join(
+                    part.get("text", "") if isinstance(part, dict) else getattr(part, "text", "")
+                    for part in raw_content
+                )
+            else:
+                section_body = raw_content or ""
             formatted = (
                 f"{idx}) {title}\n"
                 f"{'=' * 80}\n"
@@ -204,6 +209,8 @@ def synthesize_transcript(
             section_texts.append(formatted)
 
         summary_text = "\n\n".join(section_texts)
+        # Write the last response for staging (or could write all, but using last for simplicity)
+        staging_path.write_text(response.model_dump_json(indent=2), encoding="utf-8")
     else:
         message = _build_user_prompt(company, transcript)
         response = api_client.chat.completions.create(
@@ -215,8 +222,16 @@ def synthesize_transcript(
                 {"role": "user", "content": message},
             ],
         )
+        staging_path.write_text(response.model_dump_json(indent=2), encoding="utf-8")
 
-        summary_text = response.choices[0].message.content or ""
+        raw_content = response.choices[0].message.content
+        if isinstance(raw_content, list):
+            summary_text = "".join(
+                part.get("text", "") if isinstance(part, dict) else getattr(part, "text", "")
+                for part in raw_content
+            )
+        else:
+            summary_text = raw_content or ""
 
     return TranscriptSummary(company=company, transcript_path=path, summary_text=summary_text)
 
