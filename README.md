@@ -84,7 +84,7 @@ generate_and_email_transcript(
 
 Required environment for the above:
 
-* `RAPIDAPI_KEY` – Seeking Alpha API key for `fetch_transcript.py`.
+* `RAPIDAPI_KEY` – Seeking Alpha API key for the transcript utilities in `earnings_call.transcripts`.
 * `OPENAI_API_KEY` – OpenAI key for the summarizer.
 * SMTP variables per your server (`SMTP_HOST`, optional `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_USE_TLS`).
 

@@ -11,9 +11,9 @@ from openai import OpenAI
 # Load environment variables from .env file
 load_dotenv()
 
-from fetch_transcript import fetch_latest_transcript
 from earnings_call.emailer import build_email, send_email
 from earnings_call.summarizer import TranscriptSummary, synthesize_transcript
+from earnings_call.transcripts import fetch_latest_transcript
 
 
 class TranscriptPipelineError(RuntimeError):
@@ -34,9 +34,9 @@ def generate_and_email_transcript(
     subject: Optional[str] = None,
     transcript_api_key: Optional[str] = None,
     transcript_path: Optional[Path | str] = None,
-    model: str = "gpt-4o-mini",
+    model: str = "gpt-4.1",
     client: Optional[OpenAI] = None,
-    max_output_tokens: int = 800,
+    max_output_tokens: int = 3000,
     extra_instructions: Optional[Iterable[str]] = None,
     transcript_text_override: Optional[str] = None,
 ) -> TranscriptSummary:

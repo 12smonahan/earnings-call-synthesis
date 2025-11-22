@@ -11,13 +11,13 @@ Run the manual test script:
 source .venv/bin/activate
 
 # Run all tests
-python test_manual.py
+python tests/test_manual.py
 
 # Or run individual tests
-python test_manual.py env      # Check environment variables
-python test_manual.py fetch    # Test transcript fetching
-python test_manual.py summarize # Test summarization
-python test_manual.py email    # Test email building
+python tests/test_manual.py env      # Check environment variables
+python tests/test_manual.py fetch    # Test transcript fetching
+python tests/test_manual.py summarize # Test summarization
+python tests/test_manual.py email    # Test email building
 ```
 
 ## Prerequisites
@@ -38,7 +38,7 @@ python test_manual.py email    # Test email building
 ### 1. Test Transcript Fetching
 
 ```bash
-python -c "from fetch_transcript import fetch_latest_transcript; fetch_latest_transcript('AAPL')"
+python -c "from earnings_call.transcripts import fetch_latest_transcript; fetch_latest_transcript('AAPL')"
 ```
 
 This will:

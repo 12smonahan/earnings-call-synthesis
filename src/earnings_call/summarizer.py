@@ -28,9 +28,9 @@ class TranscriptSummary:
     summary_text: str
 
 
-SYSTEM_PROMPT = """You are a research analyst reviewing earnings call transcripts for potential competitors in consumer lending.
-You distill dense, noisy transcripts into concise, actionable insights for a product and strategy team.
-Keep your writing direct, factual, and bullet-heavy. Avoid generic corporate language.
+SYSTEM_PROMPT = """You are a chief executive at a consumer lending competitor dissecting an earnings call transcript.
+Your goal is to extract granular signals that inform strategy, product bets, and competitive positioning.
+Write with the urgency and specificity of a CEO preparing a counter-move playbook. Avoid corporate euphemisms; favor concrete, quotable facts.
 """
 
 
@@ -49,15 +49,22 @@ def _build_user_prompt(company: str, transcript: str) -> str:
     transcript_block = transcript.strip()
     return (
         f"You are reviewing the {company} earnings call transcript.\n"
-        "Summarize for a consumer lending competitor who wants tactical takeaways.\n"
-        "Use short paragraphs and bullet lists with section headers. Be explicit about metrics and directionality when provided.\n\n"
-        "Required sections:\n"
-        "1) Economic performance\n"
-        "2) Credit performance\n"
-        "3) Macro & consumer health\n"
-        "4) New products, partnerships, or technology\n"
-        "5) Cutting-edge or noteworthy items (flag anything experimental or differentiating)\n"
-        "6) Risks & watch-outs\n\n"
+        "Summarize for a consumer lending competitor CEO preparing a counter-strategy.\n"
+        "Deliver ~1,000 words total with a ~200 word executive summary followed by a deep dive.\n"
+        "Use explicit metrics (levels and directionality), cite product names, and call out signals that demand a response.\n"
+        "Favor bullet-heavy structure with crisp section headers; keep prose direct and decisive.\n\n"
+        "Required structure:\n"
+        "- Executive summary (~200 words) focused on competitive implications.\n"
+        "- Detailed analysis covering:\n"
+        "  1) Economic performance\n"
+        "  2) Credit performance\n"
+        "  3) Macro & consumer health\n"
+        "  4) New products, partnerships, or technology\n"
+        "  5) Cutting-edge or noteworthy items (experimental, differentiated)\n"
+        "  6) Risks & watch-outs\n"
+        "  7) Tactical responses we should consider as a competitor\n\n"
+        "Emphasize details critical to a rival fintech CEO: pricing shifts, channel moves, capital or liquidity signals,\n"
+        "operational changes, regulatory posture, and any data that hints at momentum or weakness.\n\n"
         f"Transcript:\n\"\"\"{transcript_block}\"\"\"\n"
     )
 
@@ -66,9 +73,9 @@ def synthesize_transcript(
     transcript_path: Path | str,
     *,
     company: str,
-    model: str = "gpt-4o-mini",
+    model: str = "gpt-4.1",
     client: Optional[OpenAI] = None,
-    max_output_tokens: int = 800,
+    max_output_tokens: int = 3000,
     extra_instructions: Optional[Iterable[str]] = None,
     transcript_text_override: Optional[str] = None,
 ) -> TranscriptSummary:
@@ -123,9 +130,9 @@ def summarize_text(
     transcript: str,
     *,
     company: str,
-    model: str = "gpt-4o-mini",
+    model: str = "gpt-4.1",
     client: Optional[OpenAI] = None,
-    max_output_tokens: int = 800,
+    max_output_tokens: int = 3000,
     extra_instructions: Optional[Iterable[str]] = None,
 ) -> str:
     """Summarize a transcript string without reading from disk.
