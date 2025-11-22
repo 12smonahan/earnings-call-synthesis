@@ -10,8 +10,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Add src directory to Python path so we can import earnings_call
-project_root = Path(__file__).parent
+# Add src directory to Python path so we can import earnings_call when running directly
+project_root = Path(__file__).resolve().parents[1]
 src_path = project_root / "src"
 if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
@@ -26,7 +26,7 @@ def test_fetch_transcript():
     print("TEST 1: Fetch Transcript")
     print("=" * 60)
     
-    from fetch_transcript import fetch_latest_transcript
+    from earnings_call.transcripts import fetch_latest_transcript
     
     symbol = "AAPL"
     print(f"Fetching transcript for {symbol}...")
