@@ -4,7 +4,7 @@ import os
 import requests
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 from dotenv import load_dotenv
 
@@ -152,7 +152,7 @@ def get_earnings_transcript(transcript_id: str, api_key: Optional[str] = None) -
 
 
 def find_latest_local_transcript(
-    symbol: str, directory: str | Path = "transcripts"
+    symbol: str, directory: Union[str, Path] = "transcripts"
 ) -> Optional[Path]:
     """Return the most recently modified transcript file for the given symbol.
 
